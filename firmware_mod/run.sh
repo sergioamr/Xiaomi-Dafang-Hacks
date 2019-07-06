@@ -212,8 +212,9 @@ echo "dropbear: $dropbear_status" >> $LOGPATH
 ## Create a certificate for the webserver
 if [ ! -f $CONFIGPATH/lighttpd.pem ]; then
   export OPENSSL_CONF=$CONFIGPATH/openssl.cnf
-  /system/sdcard/bin/openssl req -new -x509 -keyout $CONFIGPATH/lighttpd.pem -out $CONFIGPATH/lighttpd.pem -days 365 -nodes -subj "/C=DE/ST=Bavaria/L=Munich/O=.../OU=.../CN=.../emailAddress=..."
-  chmod 400 $CONFIGPATH/lighttpd.pem
+  /system/sdcard/bin/openssl genrsa -out $CONFIGPATH/ca.pem 2048
+  /system/sdcard/bin/openssl req -new -x509 -key $CONFIGPATH/ca.pem -keyout $CONFIGPATH/lighttpd.pem -out $CONFIGPATH/lighttpd.pem -days 365 -nodes -subj "/C=DE/ST=Bavaria/L=Munich/O=.../OU=.../CN=.../emailAddress=..."
+  chmod 400 $CONFIGPATH/ca.pem $CONFIGPATH/lighttpd.pem
   echo "Created new certificate for webserver" >> $LOGPATH
 fi
 
