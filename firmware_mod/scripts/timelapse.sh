@@ -3,6 +3,8 @@
 # Takes a snapshot every N seconds interval configured
 # in /system/sdcard/config/timelapse.conf
 
+. /system/sdcard/config/motion.conf
+
 PIDFILE='/run/timelapse.pid'
 TIMELAPSE_CONF='/system/sdcard/config/timelapse.conf'
 BASE_SAVE_DIR='/system/sdcard/DCIM/timelapse'
@@ -38,10 +40,43 @@ while true; do
     counter_formatted=$(printf '%03d' $counter)
     filename="${filename_prefix}_${counter_formatted}.jpg"
     if [ -z "$COMPRESSION_QUALITY" ]; then
-         /system/sdcard/bin/getimage > "$SAVE_DIR/$filename" &
+         /system/sdcard/bin/getimage > "$SAVE_DIR/$filename" 
     else
-        /system/sdcard/bin/getimage | /system/sdcard/bin/jpegoptim -m"$COMPRESSION_QUALITY" --stdin --stdout > "$SAVE_DIR/$filename" &
+        /system/sdcard/bin/getimage | /system/sdcard/bin/jpegoptim -m"$COMPRESSION_QUALITY" --stdin --stdout > "$SAVE_DIR/$filename" 
     fi
+
+    snapshot_tempfile=$SAVE_DIR/$filename
+    echo "SAVE $snapshot_tempfile"
+    ls $snapshot_tempfile -la
+
+    # FTP snapshot and video stream
+    if [ "$ftp_snapshot" = true -o "$ftp_video" = true ]; then
+        (
+        echo "FTP UPLOAD"
+        ftpput_cmd="/system/sdcard/bin/busybox ftpput"
+        if [ "$ftp_username" != "" ]; then
+                ftpput_cmd="$ftpput_cmd -u $ftp_username"
+        fi
+        if [ "$ftp_password" != "" ]; then
+                ftpput_cmd="$ftpput_cmd -p $ftp_password"
+        fi
+        if [ "$ftp_port" != "" ]; then
+                ftpput_cmd="$ftpput_cmd -P $ftp_port"
+        fi
+        ftpput_cmd="$ftpput_cmd $ftp_host"
+
+        if [ "$ftp_snapshot" = true ]; then
+                echo "Sending FTP snapshot to ftp://$ftp_host/$ftp_stills_dir/$filename"
+                $ftpput_cmd "$ftp_timelapse_dir/$filename" $snapshot_tempfile
+
+        echo ""
+        echo " $ftpput_cmd "$ftp_timelapse_dir/$filename" $snapshot_tempfile "
+        echo ""
+        fi
+
+        ) &
+    fi
+
     sleep $TIMELAPSE_INTERVAL
 
     if [ $TIMELAPSE_DURATION -gt 0 ]; then
@@ -51,6 +86,7 @@ while true; do
             break
         fi
     fi
+  
 done
 
 # loop completed so let's purge pid file
