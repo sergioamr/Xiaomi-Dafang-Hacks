@@ -1,0 +1,28 @@
+#!/bin/sh
+
+# Source your custom motion configurations
+. /system/sdcard/scripts/common_functions.sh
+
+
+find /system/sdcard/DCIM/. -mmin +$((60*48)) -type f -name '*.jpg' -delete
+find /system/sdcard/DCIM/. -mmin +$((60*48)) -type f -name '*.mp4' -delete
+find /system/sdcard/DCIM/. -mmin +$((60*48)) -type f -name '*.avi' -delete
+find /system/sdcard/DCIM/. -mmin +$((60*48)) -type f -name '*.h264' -delete
+
+recording off
+recording on
+
+sleep 30
+
+TELEGRAM="/system/sdcard/bin/telegram"
+
+sendShot() {
+  /system/sdcard/bin/getimage > "/tmp/telegram_image_cap.jpg" &&\
+  $TELEGRAM p "/tmp/telegram_image_cap.jpg"
+  rm "/tmp/telegram_image_cap.jpg"
+}
+
+sendShot
+
+sleep 30
+reboot
