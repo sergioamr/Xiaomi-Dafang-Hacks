@@ -29,6 +29,10 @@ detectionOff() {
   motion_detection off && $TELEGRAM m "Motion detection stopped"
 }
 
+calibrate() {
+  motor reset_pos_count 100
+}
+
 textAlerts() {
   rewrite_config /system/sdcard/config/motion.conf telegram_alert_type "text"
   $TELEGRAM m "Text alerts on motion detection enabled"
@@ -44,18 +48,31 @@ videoAlerts() {
   $TELEGRAM m "Video alerts on motion detection enabled"
 }
 
+reboots() {
+  $TELEGRAM m "Reboot system in 90!"
+  reboot -d 90 &
+}
+
+move() {
+  motor right 250   
+}
+
+
 respond() {
   cmd=$1
   [ $chatId -lt 0 ] && cmd=${1%%@*}
   case $cmd in
     /mem) sendMem;;
+    /move) move;;
     /shot) sendShot;;
     /on) detectionOn;;
     /off) detectionOff;;
+    /calibrate) calibrate;;
     /textalerts) textAlerts;;
     /imagealerts) imageAlerts;;
     /videoalerts) videoAlerts;;
-    /help | /start) $TELEGRAM m "######### Bot commands #########\n# /mem - show memory information\n# /shot - take a snapshot\n# /on - motion detection on\n# /off - motion detection off\n# /textalerts - Text alerts on motion detection\n# /imagealerts - Image alerts on motion detection\n# /videoalerts - Video alerts on motion detection";;
+    /reboot) reboots;;
+    /help | /start) $TELEGRAM m "######### Bot commands #########\n# /reboot - fuck!\n# /calibrate - Move motor to calibration \n# /move - Move camera right \n# /mem - show memory information\n# /shot - take a snapshot\n# /on - motion detection on\n# /off - motion detection off\n# /textalerts - Text alerts on motion detection\n# /imagealerts - Image alerts on motion detection\n# /videoalerts - Video alerts on motion detection";;
     *) $TELEGRAM m "I can't respond to '$cmd' command"
   esac
 }
@@ -101,6 +118,10 @@ main() {
 
   markAsRead $updateId
 }
+
+$TELEGRAM m "Camera boot!"
+calibrate
+sendShot
 
 while true; do
   main >/dev/null 2>&1
